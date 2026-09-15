@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#20251e">
+  <meta name="description" content="An offline, six-guess Don't Wordle sequence optimizer, powered by a native WebAssembly search engine.">
+  <title>Don't Wordle — Sequence optimizer</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <header class="masthead">
+    <a class="wordmark" href="./" aria-label="Don't Wordle optimizer home">D/W <span>SEQUENCE LAB</span></a>
+    <span class="local-note"><span class="status-dot" aria-hidden="true"></span> On your device. Not on a server.</span>
+  </header>
+  <main>
+    <div class="workspace">
+      <section class="setup" aria-labelledby="setup-title">
+        <div class="section-heading"><span class="section-number">01</span><h2 id="setup-title">Set the search</h2></div>
+        <form id="search-form" novalidate>
+          <fieldset id="search-fields">
+            <legend class="sr-only">Search settings</legend>
+            <label for="answer">Known answer <span class="field-meta">5 letters</span></label>
+            <input id="answer" class="answer-input" name="answer" type="text" value="CRANE" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="answer-help form-error" required>
+            <p id="answer-help" class="field-help">The word to avoid. Never sent anywhere.</p>
+
+            <label for="time-limit">Search budget</label>
+            <select id="time-limit" name="time-limit" aria-describedby="budget-help">
+              <option value="10">10 seconds · quick search</option>
+              <option value="30" selected>30 seconds · more exploration</option>
+              <option value="60">60 seconds · deeper search</option>
+              <option value="exhaustive">Exhaustive · no time limit</option>
+            </select>
+            <p id="budget-help" class="field-help">A timed search returns the best found, unless it proves optimality sooner. Exhaustive searches may take a very long time.</p>
+
+            <details class="prefix-settings">
+              <summary>Already have a starting sequence?</summary>
+              <label for="history">Fixed prefix <span class="field-meta">optional</span></label>
+              <input id="history" name="history" type="text" placeholder="e.g. gyppy, vivid" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="history-help form-error">
+              <p id="history-help" class="field-help">Up to six comma-separated words, in order. They count toward the six guesses and must obey all earlier feedback. The engine checks legality.</p>
+            </details>
+            <button id="start-button" class="button primary" type="submit">Find sequence <span aria-hidden="true">↗</span></button>
+          </fieldset>
+          <button id="stop-button" class="button stop" type="button" disabled>Stop search</button>
+          <p id="form-error" class="error-message" role="alert" hidden></p>
+        </form>
+        <p class="privacy-note">C++ search engine → WebAssembly.<br>Runs in a background worker; Stop ends it immediately.</p>
+      </section>
+
+      <section class="results" aria-labelledby="results-title">
+        <div class="results-heading">
+          <div class="section-heading"><span class="section-number">02</span><h2 id="results-title">The sequence</h2></div>
+          <span id="status-badge" class="status-badge" data-state="idle">READY</span>
+        </div>
+        <p id="result-context" class="result-context">Six turns. No undos. The answer stays unguessed.</p>
+        <div class="score-strip">
+          <div class="main-score"><span class="metric-label">FINAL SCORE</span><strong id="final-score">—</strong></div>
+          <div class="score-equation"><div><strong id="remaining-words">—</strong><span>valid words left</span></div><span class="multiply" aria-hidden="true">×</span><div><strong id="unused-letters">—</strong><span>unused letters</span></div></div>
+        </div>
+        <div class="status-copy"><p id="search-status" role="status" aria-live="polite" aria-atomic="true">Ready when you are. Enter the known answer to find a six-guess sequence.</p></div>
+        <table class="sequence-table" aria-busy="false">
+          <caption class="sr-only">Six-guess sequence with feedback, remaining valid words, unused distinct letters, and score after each guess</caption>
+          <thead><tr><th scope="col" class="turn-column">Turn</th><th scope="col" class="guess-column">Guess / feedback</th><th scope="col">Valid<br>words</th><th scope="col">Unused<br>letters</th><th scope="col">Score</th></tr></thead>
+          <tbody id="sequence-body"></tbody>
+        </table>
+        <div class="feedback-legend" aria-label="Feedback legend"><span><i class="legend-swatch green" aria-hidden="true"></i>Correct place</span><span><i class="legend-swatch yellow" aria-hidden="true"></i>Wrong place</span><span><i class="legend-swatch gray" aria-hidden="true"></i>Not present / excess</span></div>
+        <div class="search-metrics"><span>Search time <strong id="elapsed">—</strong></span><span>Nodes <strong id="nodes">—</strong></span><span>Score ceiling <strong id="upper-bound">—</strong></span></div>
+      </section>
+    </div>
+
+    <section class="method" aria-labelledby="method-title">
+      <div><p class="eyebrow">WHAT WE'RE MAXIMIZING</p><h2 id="method-title">More possibilities.<br>Fewer letters spent.</h2></div>
+      <div><p>The objective is <strong>final valid words × unused distinct letters</strong>, measured after all six guesses—not the sum of the row scores. Every guess must remain legal under the feedback so far, and cannot be the known answer.</p><p><strong>Optimal</strong> means the search proved no better sequence exists. A time limit or manual stop gives an <strong>unproven best known</strong> sequence, if one was found. With a fixed prefix, any proof is conditional on that exact prefix. The score ceiling is an upper bound, not a promised result.</p></div>
+    </section>
+  </main>
+  <footer><span>12,974-word dictionary from <a href="https://dontwordle.com/" target="_blank" rel="noopener noreferrer">dontwordle.com <span aria-hidden="true">↗</span></a></span><span>Independent tool · Six guesses, always</span></footer>
+  <noscript><p class="noscript">JavaScript and WebAssembly are required to run the local search engine.</p></noscript>
+</body>
+</html>

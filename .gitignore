@@ -1,0 +1,6 @@
+/dont-wordle
+/web/solver.mjs
+/web/solver.wasm
+__pycache__/
+*.py[cod]
+/.wrangler/
