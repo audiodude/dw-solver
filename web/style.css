@@ -50,6 +50,8 @@ summary { font-size: 12px; line-height: 1.6; color: var(--muted); }
 .prefix-settings[open] summary { margin-bottom: 18px; }
 .prefix-settings .field-help { margin-bottom: 0; }
 #history { font-size: 14px; }
+.custom-time { margin-top: 8px; font-size: 14px; }
+.custom-time[hidden] { display: none; }
 .button { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 48px; border-radius: 3px; border: 1px solid var(--ink); font-size: 13px; font-weight: 700; padding: 13px 16px; transition: background 120ms ease; }
 .primary { background: var(--ink); color: var(--lime); }
 .primary:hover:not(:disabled) { background: #39412e; }

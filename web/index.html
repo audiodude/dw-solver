@@ -30,8 +30,12 @@
               <option value="10">10 seconds · quick search</option>
               <option value="30" selected>30 seconds · more exploration</option>
               <option value="60">60 seconds · deeper search</option>
+              <option value="300">5 minutes · long search</option>
+              <option value="600">10 minutes · very long search</option>
+              <option value="custom">Custom…</option>
               <option value="exhaustive">Exhaustive · no time limit</option>
             </select>
+            <input id="custom-time" class="custom-time" name="custom-time" type="number" min="1" step="any" inputmode="decimal" placeholder="Seconds, e.g. 120" aria-label="Custom search budget in seconds" aria-describedby="budget-help form-error" hidden>
             <p id="budget-help" class="field-help">A timed search returns the best found, unless it proves optimality sooner. Exhaustive searches may take a very long time.</p>
 
             <details class="prefix-settings">

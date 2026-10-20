@@ -42,7 +42,7 @@ self.onmessage = async ({ data }) => {
   try {
     if (!/^[a-z]{5}$/.test(data.answer) || !Array.isArray(data.history) || data.history.length > 6 ||
         data.history.some((word) => !/^[a-z]{5}$/.test(word)) ||
-        !["10", "30", "60", "exhaustive"].includes(data.budget)) {
+        (data.budget !== "exhaustive" && !(Number(data.budget) > 0 && Number(data.budget) <= 1e9))) {
       throw new Error("Invalid search settings.");
     }
     if (typeof WebAssembly === "undefined") throw new Error("This browser does not support WebAssembly.");

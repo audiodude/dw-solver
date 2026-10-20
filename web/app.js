@@ -4,6 +4,11 @@ const fields = byId("search-fields");
 const answerInput = byId("answer");
 const historyInput = byId("history");
 const budgetInput = byId("time-limit");
+const customTimeInput = byId("custom-time");
+budgetInput.addEventListener("change", () => {
+  customTimeInput.hidden = budgetInput.value !== "custom";
+  if (!customTimeInput.hidden) customTimeInput.focus();
+});
 const startButton = byId("start-button");
 const stopButton = byId("stop-button");
 const errorBox = byId("form-error");
@@ -137,6 +142,7 @@ function finishRun(run, result) {
 function validateSettings() {
   answerInput.removeAttribute("aria-invalid");
   historyInput.removeAttribute("aria-invalid");
+  customTimeInput.removeAttribute("aria-invalid");
   errorBox.hidden = true;
   errorBox.textContent = "";
   const answer = normalize(answerInput.value);
@@ -158,6 +164,9 @@ function validateSettings() {
   } else if (new Set(history).size !== history.length) {
     invalidInput = historyInput;
     message = "The fixed prefix cannot repeat a guess. Each earlier guess is ruled out once it is used.";
+  } else if (budgetInput.value === "custom" && !(Number(customTimeInput.value) > 0 && Number(customTimeInput.value) <= 1e9)) {
+    invalidInput = customTimeInput;
+    message = "Enter a custom search budget as a positive number of seconds (at most 1,000,000,000).";
   }
   if (invalidInput) {
     invalidInput.setAttribute("aria-invalid", "true");
@@ -167,7 +176,8 @@ function validateSettings() {
     invalidInput.focus();
     return null;
   }
-  return { answer, history, budget: budgetInput.value };
+  const budget = budgetInput.value === "custom" ? String(Number(customTimeInput.value)) : budgetInput.value;
+  return { answer, history, budget };
 }
 
 form.addEventListener("submit", (event) => {
