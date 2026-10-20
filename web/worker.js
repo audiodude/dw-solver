@@ -46,7 +46,7 @@ self.onmessage = async ({ data }) => {
       throw new Error("Invalid search settings.");
     }
     if (typeof WebAssembly === "undefined") throw new Error("This browser does not support WebAssembly.");
-    const { default: createSolver } = await import("./solver.mjs");
+    const { default: createSolver } = await import(`./solver.mjs${self.location.search}`);
     const engine = await createSolver({
       noInitialRun: true,
       print: stdout,

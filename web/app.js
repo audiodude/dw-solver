@@ -197,7 +197,8 @@ form.addEventListener("submit", (event) => {
   setStatus("LOADING", "running", "Loading the local WebAssembly engine and embedded dictionary. You can stop at any time.");
   // The identity check discards queued events from terminated or superseded workers.
   try {
-    run.worker = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
+    // Carry the deploy version (?v=…) through so stale cached workers are never reused.
+    run.worker = new Worker(new URL(`./worker.js${new URL(import.meta.url).search}`, import.meta.url), { type: "module" });
     run.worker.onmessage = ({ data }) => {
       if (activeRun !== run) return;
       switch (data.type) {
