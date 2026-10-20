@@ -67,6 +67,7 @@ public:
     int target;
     size_t blocks;
     std::unordered_set<std::string> visited;
+    Clock::time_point exploreUntil = started;
 #ifdef __EMSCRIPTEN__
     bool reportProgress = false;
     int rootUpperBound = 0;
@@ -174,23 +175,57 @@ public:
         return interrupted;
     }
 
+    void record(int score, const std::vector<int>& path) {
+        if (score <= best) return;
+        best = score;
+        bestPath = path;
+#ifdef __EMSCRIPTEN__
+        emitProgress(true);
+#else
+        std::cerr << "Best complete score: " << best << "  [";
+        for (int id : path) std::cerr << words[id] << ' ';
+        std::cerr << "]\n";
+#endif
+    }
+
+    // Limited discrepancy search: pass k follows the top-ranked move except at exactly k
+    // nodes, spending those departures at the earliest guesses first. It only raises `best`
+    // and never touches `visited`, so the exhaustive search that follows remains a proof.
+    void explore(const Bits& bits, uint32_t used, int depth, std::vector<int>& path, double limit) {
+        exploreUntil = Clock::now() + std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(limit));
+        for (int k = 0; k <= depth && !exploreExpired(); ++k) probe(bits, used, depth, k, path);
+    }
+
+    bool exploreExpired() {
+        return expired() || Clock::now() >= exploreUntil;
+    }
+
+    void probe(const Bits& bits, uint32_t used, int depth, int k, std::vector<int>& path) {
+        ++nodes;
+        if (exploreExpired()) return;
+        if (!depth) {
+            record(count(bits) * (26 - std::popcount(used)), path);
+            return;
+        }
+        const auto choices = moves(bits, used, depth);
+        auto step = [&](const Move& move, int left) {
+            path.push_back(move.id);
+            probe(after(bits, move.id), move.used, depth - 1, left, path);
+            path.pop_back();
+        };
+        if (k) for (size_t i = 1; i < choices.size() && choices[i].bound > best; ++i) {
+            step(choices[i], k - 1);
+            if (exploreExpired()) return;
+        }
+        if (!choices.empty() && k < depth && choices[0].bound > best) step(choices[0], k);
+    }
+
     void search(const Bits& bits, uint32_t used, int depth, std::vector<int>& path) {
         ++nodes;
         if (expired()) return;
         const int n = count(bits);
         if (!depth) {
-            const int score = n * (26 - std::popcount(used));
-            if (score > best) {
-                best = score;
-                bestPath = path;
-#ifdef __EMSCRIPTEN__
-                emitProgress(true);
-#else
-                std::cerr << "Best complete score: " << best << "  [";
-                for (int id : path) std::cerr << words[id] << ' ';
-                std::cerr << "]\n";
-#endif
-            }
+            record(n * (26 - std::popcount(used)), path);
             return;
         }
         if (n <= depth || (n - depth) * (26 - std::popcount(used)) <= best) return;
@@ -290,6 +325,8 @@ int main(int argc, char** argv) {
                     "Ctrl+C stops safely and returns BEST KNOWN (exit status 2).\n"
 #endif
                     "--turns is the total number of guesses, including --history (1..6).\n"
+                    "Before the exhaustive search, a limited discrepancy pass varies early guesses\n"
+                    "first to find strong sequences sooner: 20% of --time-limit, or 10s without one.\n"
                     "Dictionary: one five-letter word per line; defaults to the bundled site list.\n"
                     "Feedback: G = green, Y = yellow, . = gray. No undos are modeled.\n"
                     "Dictionary source: https://dontwordle.com/static/js/main.468abff3.js\n";
@@ -336,7 +373,9 @@ int main(int argc, char** argv) {
         solver.rootUpperBound = std::max(0, upper);
         solver.emitProgress(true);
 #endif
-        solver.search(state, used, turns - static_cast<int>(path.size()), path);
+        const int depth = turns - static_cast<int>(path.size());
+        solver.explore(state, used, depth, path, seconds > 0 ? seconds * 0.2 : 10);
+        solver.search(state, used, depth, path);
         const std::string status = solver.interrupted ? "BEST KNOWN" : solver.best < 0 ? "NO SOLUTION" : "OPTIMAL";
         solver.printResult(status, solver.interrupted ? std::max(0, upper) : solver.best, json);
         std::cout << '\n';
